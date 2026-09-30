@@ -48,7 +48,7 @@ plt.title("Daily MODIS-Aqua Chlorophyll-a, 2016")
 plt.grid(alpha=0.3)
 
 plt.savefig(
-    os.path.join(outdir, "chlorophyll_timeseries_2016.png"),
+    os.path.join(outdir, "chlorophyll_timeseries_2016_4km.png"),
     dpi=300,
     bbox_inches="tight"
 )
