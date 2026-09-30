@@ -28,7 +28,7 @@ chl_box.plot(
     cmap="viridis",
     vmin=0,
     vmax=20,
-    cbar_kwargs={"label": "Chlorophyll-a (mg m$^{-3}$)"}
+    cbar_kwargs={"label": "Chlorophyll-a (mg/3"}
 )
 
 plt.title("MODIS-Aqua Chlorophyll-a")
