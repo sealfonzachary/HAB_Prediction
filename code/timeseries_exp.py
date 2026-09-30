@@ -25,10 +25,10 @@ for file in files:
     date = pd.to_datetime(date_str, format="%Y%m%d")
 
     with xr.open_dataset(file) as ds:
-
+#[South, West, North, East]: [36.719954, -77.430046, 39.620046, -75.609954]
         chl_box = ds["chlor_a"].sel(
-            lat=slice(40.0, 36.0),
-            lon=slice(-78.0, -74.0)
+            lat=slice(39.620046, 36.719954),
+            lon=slice(-77.430046, -75.609954)
         )
 
         mean = chl_box.mean(skipna=True).item()
