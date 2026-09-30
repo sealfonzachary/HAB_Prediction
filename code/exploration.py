@@ -1,6 +1,7 @@
 #MODISA_L3m_CHL_2022.0-20260930_155709
 import glob
 import xarray as xr
+import matplotlib.pyplot as plt
 
 data_dir = "/glade/derecho/scratch/zacharys/MODISA_L3m_CHL_2022.0-20260930_155709"
 
@@ -20,7 +21,7 @@ with xr.open_dataset(files[0]) as ds:
     print("Max:", chl_box.max().values)
     print("Mean:", chl_box.mean().values)
 
-    import matplotlib.pyplot as plt
+
 
 plt.figure(figsize=(10, 8))
 
