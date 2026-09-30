@@ -2,8 +2,11 @@
 import glob
 import xarray as xr
 import matplotlib.pyplot as plt
+import os
 
 data_dir = "/glade/derecho/scratch/zacharys/MODISA_L3m_CHL_2022.0-20260930_155709"
+outdir = "/glade/u/home/zacharys/HAB_Prediction/results/exploratory_plots"
+os.makedirs(outdir, exist_ok=True)
 
 files = sorted(glob.glob(f"{data_dir}/*4km.nc"))
 with xr.open_dataset(files[0]) as ds:
@@ -36,4 +39,5 @@ plt.title("MODIS-Aqua Chlorophyll-a")
 plt.xlabel("Longitude")
 plt.ylabel("Latitude")
 
-plt.show()
+#plt.show()
+plt.savefig(os.path.join(outdir, "first_plot.png"))
