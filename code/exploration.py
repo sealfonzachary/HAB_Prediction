@@ -1,8 +1,9 @@
+
 import os
 import glob
 import xarray as xr
 
-data_dir = "/glade/derecho/scratch/zacharys/MODIS"
+data_dir = "/glade/derecho/scratch/zacharys/MODISA_L3m_CHL_2022.0-20260930_155709"
 
 files = sorted(glob.glob(f"{data_dir}/*.nc"))
 
