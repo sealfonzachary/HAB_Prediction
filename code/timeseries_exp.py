@@ -11,7 +11,7 @@ os.makedirs(outdir, exist_ok=True)
 
 # Get daily 4-km files from 2016
 files = sorted(glob.glob(
-    f"{data_dir}/AQUA_MODIS.2016*.L3m.DAY.CHL.chlor_a.4km.nc"
+    f"{data_dir}/AQUA_MODIS.2016*.L3m.DAY.CHL.chlor_a.9km.nc"
 ))
 
 dates = []
@@ -48,7 +48,7 @@ plt.title("Daily MODIS-Aqua Chlorophyll-a, 2016")
 plt.grid(alpha=0.3)
 
 plt.savefig(
-    os.path.join(outdir, "chlorophyll_timeseries_2016_4km.png"),
+    os.path.join(outdir, "chlorophyll_timeseries_2016_9km.png"),
     dpi=300,
     bbox_inches="tight"
 )
