@@ -10,13 +10,13 @@ then edit the years and run again for the next decade (API max = 10 years per ru
 Re-running the same years resumes. Station folders from earlier runs that are not
 yet sorted into tidal / non_tidal are moved automatically at the start.
 """
-import csv, io, itertools, re, shutil, time
+import csv, io, itertools, json, re, shutil, time
 from pathlib import Path
 import requests
 
 # ===================== EDIT THESE =====================
-START_YEAR = 2000       # END_YEAR - START_YEAR must be <= 9
-END_YEAR   = 2009
+START_YEAR = 2014        # END_YEAR - START_YEAR must be <= 9
+END_YEAR   = 2023
 TEST_N     = 0           # set to e.g. 5 to try only the first 5 stations; 0 = all
 # ======================================================
 
@@ -27,24 +27,28 @@ BATCH   = 30             # IDs per request (API max is 60). Lower if requests ti
 assert END_YEAR - START_YEAR <= 9, "API allows at most 10 years per run"
 OUT_DIR.mkdir(parents=True, exist_ok=True)
 
+session = requests.Session()
+session.headers.update({"User-Agent": "Mozilla/5.0 (X11; Linux x86_64) HAB-Prediction-capstone",
+                        "Accept": "*/*"})
 
-def get(url, allow_404=False):
+
+def get(url, allow_404=False, tries=5):
     """Download a URL, retrying a few times. Returns text (None if 404 and allowed)."""
-    for attempt in range(5):
+    for attempt in range(tries):
         try:
-            r = requests.get(url, timeout=(30, 600))
+            r = session.get(url, timeout=(30, 600))
             if r.status_code == 404 and allow_404:
                 return None
             r.raise_for_status()
             return r.text
         except Exception as e:
-            print(f"  retry {attempt + 1}/5: {e}")
-            time.sleep(2 ** attempt)
+            print(f"  retry {attempt + 1}/{tries}: {e}")
+            time.sleep(5 * 2 ** attempt)   # 5s, 10s, 20s, 40s, 80s
     raise RuntimeError(f"Failed: {url}")
 
 
 def get_json(endpoint):
-    return requests.get(f"{BASE}/{endpoint}?format=json", timeout=60).json()
+    return session.get(f"{BASE}/{endpoint}?format=json", timeout=60).json()
 
 
 def chunks(items, n=BATCH):
@@ -70,26 +74,50 @@ projects = sorted({r["projectId"] for r in get_json("MetaDataAttribute/WaterQual
 print(f"{len(stations)} stations, {len(substances)} substances")
 
 # 2. Classify stations: tidal = has a Chesapeake Bay segment (CBSeg2003); else non-tidal
-kind = {}                      # station name -> "tidal" / "non_tidal"
+#    Results are cached in station_info.csv, so later runs only look up new stations.
 info_path = OUT_DIR.parent / "station_info.csv"
-info_rows = []
-for batch in chunks(stations, 60):
-    details = get(f"{BASE}/WaterQuality/Station/Station/{csv_ids(batch)}?format=json", allow_404=True)
-    if not details:
-        continue
-    import json
-    for d in json.loads(details):
+info = {}                                  # station name -> row
+if info_path.exists():
+    with open(info_path, newline="") as f:
+        info = {r["station"]: r for r in csv.DictReader(f)}
+kind = {name: r["kind"] for name, r in info.items()}
+
+
+def lookup(ids):
+    """Fetch station details; returns True if the request worked."""
+    try:
+        text = get(f"{BASE}/WaterQuality/Station/Station/{csv_ids(ids)}?format=json", allow_404=True, tries=2)
+    except RuntimeError:
+        return False
+    for d in json.loads(text) if text else []:
         name = clean(d["station"])
         kind[name] = "tidal" if (d.get("cbSeg2003") or "").strip() else "non_tidal"
-        info_rows.append({"station": name, "kind": kind[name], "latitude": d.get("latitude"),
-                          "longitude": d.get("longitude"), "cbSeg2003": d.get("cbSeg2003"),
-                          "fallLine": d.get("fallLine"), "state": d.get("state"),
-                          "description": d.get("stationDescription")})
-if info_rows:
+        info[name] = {"station": name, "kind": kind[name], "latitude": d.get("latitude"),
+                      "longitude": d.get("longitude"), "cbSeg2003": d.get("cbSeg2003"),
+                      "fallLine": d.get("fallLine"), "state": d.get("state"),
+                      "description": d.get("stationDescription")}
+    return True
+
+
+names = {s["stationId"]: clean(s["stationName"]) for s in station_rows}
+todo = [i for i in stations if names.get(i) not in kind]
+print(f"{len(kind)} stations already classified, looking up {len(todo)} more")
+failed = []
+for batch in chunks(todo, 20):
+    if not lookup(batch):                  # batch refused: retry one station at a time
+        for i in batch:
+            time.sleep(1)
+            if not lookup([i]):
+                failed.append(names.get(i, i))
+    time.sleep(1)
+if failed:
+    print(f"  could not classify {len(failed)} stations (they go in unknown/): {failed[:10]}")
+if info:
     with open(info_path, "w", newline="") as f:
-        w = csv.DictWriter(f, fieldnames=list(info_rows[0]))
+        w = csv.DictWriter(f, fieldnames=["station", "kind", "latitude", "longitude",
+                                          "cbSeg2003", "fallLine", "state", "description"])
         w.writeheader()
-        w.writerows(info_rows)
+        w.writerows(info.values())
 n_t = sum(v == "tidal" for v in kind.values())
 print(f"Classified {n_t} tidal, {len(kind) - n_t} non-tidal  (saved {info_path})")
 
