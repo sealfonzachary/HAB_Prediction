@@ -1,0 +1,126 @@
+Found 8561 files
+
+FILE:
+/glade/derecho/scratch/zacharys/HAB_Prediction/data/modis/AQUA_MODIS.20020704.L3m.DAY.CHL.chlor_a.4km.nc
+
+DATASET:
+<xarray.Dataset> Size: 149MB
+Dimensions:  (lat: 4320, lon: 8640, rgb: 3, eightbitcolor: 256)
+Coordinates:
+  * lat      (lat) float32 17kB 89.98 89.94 89.9 89.85 ... -89.9 -89.94 -89.98
+  * lon      (lon) float32 35kB -180.0 -179.9 -179.9 ... 179.9 179.9 180.0
+Dimensions without coordinates: rgb, eightbitcolor
+Data variables:
+    chlor_a  (lat, lon) float32 149MB ...
+    palette  (rgb, eightbitcolor) uint8 768B ...
+Attributes: (12/62)
+    product_name:                     AQUA_MODIS.20020704.L3m.DAY.CHL.chlor_a...
+    instrument:                       MODIS
+    title:                            MODISA Level-3 Standard Mapped Image
+    project:                          Ocean Biology Processing Group (NASA/GS...
+    platform:                         Aqua
+    source:                           satellite observations from MODIS-Aqua
+    ...                               ...
+    cdm_data_type:                    grid
+    keywords:                         Earth Science > Oceans > Ocean Chemistr...
+    keywords_vocabulary:              NASA Global Change Master Directory (GC...
+    data_bins:                        3198597
+    data_minimum:                     0.0037699728
+    data_maximum:                     86.19845
+
+VARIABLES:
+
+============================================================
+chlor_a
+<xarray.DataArray 'chlor_a' (lat: 4320, lon: 8640)> Size: 149MB
+[37324800 values with dtype=float32]
+Coordinates:
+  * lat      (lat) float32 17kB 89.98 89.94 89.9 89.85 ... -89.9 -89.94 -89.98
+  * lon      (lon) float32 35kB -180.0 -179.9 -179.9 ... 179.9 179.9 180.0
+Attributes:
+    long_name:      Chlorophyll Concentration, OCI Algorithm
+    units:          mg m^-3
+    standard_name:  mass_concentration_of_chlorophyll_in_sea_water
+    valid_min:      0.001
+    valid_max:      100.0
+    reference:      Hu, C., Lee Z., and Franz, B.A. (2012). Chlorophyll-a alg...
+    display_scale:  log
+    display_min:    0.01
+    display_max:    20.0
+
+============================================================
+palette
+<xarray.DataArray 'palette' (rgb: 3, eightbitcolor: 256)> Size: 768B
+[768 values with dtype=uint8]
+Dimensions without coordinates: rgb, eightbitcolor
+
+COORDINATES:
+lat
+lon
+
+DIMENSIONS:
+FrozenMappingWarningOnValuesAccess({'lat': 4320, 'lon': 8640, 'rgb': 3, 'eightbitcolor': 256})
+
+ATTRIBUTES:
+product_name: AQUA_MODIS.20020704.L3m.DAY.CHL.chlor_a.4km.nc
+instrument: MODIS
+title: MODISA Level-3 Standard Mapped Image
+project: Ocean Biology Processing Group (NASA/GSFC/OBPG)
+platform: Aqua
+source: satellite observations from MODIS-Aqua
+temporal_range: day
+processing_version: R2022.0
+date_created: 2022-07-25T15:14:49.000Z
+history: l3mapgen par=AQUA_MODIS.20020704.L3m.DAY.CHL.chlor_a.4km.nc.param 
+l2_flag_names: ATMFAIL,LAND,HILT,HISATZEN,STRAYLIGHT,CLDICE,COCCOLITH,LOWLW,CHLWARN,CHLFAIL,NAVWARN,MAXAERITER,ATMWARN,HISOLZEN,NAVFAIL,FILTER,HIGLINT
+time_coverage_start: 2002-07-04T00:55:01.000Z
+time_coverage_end: 2002-07-05T02:15:00.000Z
+start_orbit_number: 885
+end_orbit_number: 901
+map_projection: Equidistant Cylindrical
+latitude_units: degrees_north
+longitude_units: degrees_east
+northernmost_latitude: 90.0
+southernmost_latitude: -90.0
+westernmost_longitude: -180.0
+easternmost_longitude: 180.0
+geospatial_lat_max: 90.0
+geospatial_lat_min: -90.0
+geospatial_lon_max: 180.0
+geospatial_lon_min: -180.0
+latitude_step: 0.0416666679084301
+longitude_step: 0.0416666679084301
+sw_point_latitude: -89.97916412353516
+sw_point_longitude: -179.9791717529297
+spatialResolution: 4.638312 km
+geospatial_lon_resolution: 4.638312 km
+geospatial_lat_resolution: 4.638312 km
+geospatial_lat_units: degrees_north
+geospatial_lon_units: degrees_east
+number_of_lines: 4320
+number_of_columns: 8640
+measure: Mean
+suggested_image_scaling_minimum: 0.009999999776482582
+suggested_image_scaling_maximum: 20.0
+suggested_image_scaling_type: LOG
+suggested_image_scaling_applied: No
+_lastModified: 2022-07-25T15:14:49.000Z
+Conventions: CF-1.6 ACDD-1.3
+institution: NASA Goddard Space Flight Center, Ocean Ecology Laboratory, Ocean Biology Processing Group
+standard_name_vocabulary: CF Standard Name Table v36
+naming_authority: gov.nasa.gsfc.sci.oceandata
+id: R2022.0/L3/AQUA_MODIS.20020704.L3b.DAY.CHL.nc
+license: https://science.nasa.gov/earth-science/earth-science-data/data-information-policy/
+creator_name: NASA/GSFC/OBPG
+publisher_name: NASA/GSFC/OBPG
+creator_email: data@oceancolor.gsfc.nasa.gov
+publisher_email: data@oceancolor.gsfc.nasa.gov
+creator_url: https://oceandata.sci.gsfc.nasa.gov
+publisher_url: https://oceandata.sci.gsfc.nasa.gov
+processing_level: L3 Mapped
+cdm_data_type: grid
+keywords: Earth Science > Oceans > Ocean Chemistry > Pigments > Chlorophyll; Earth Science > Oceans > Ocean Chemistry > Chlorophyllr
+keywords_vocabulary: NASA Global Change Master Directory (GCMD) Science Keywords
+data_bins: 3198597
+data_minimum: 0.003769972827285528
+data_maximum: 86.19844818115234
