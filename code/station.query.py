@@ -6,8 +6,8 @@ from pathlib import Path
 # CHANGE ONLY THESE VALUES
 # ============================================================
 
-START_YEAR = 2010
-END_YEAR   = 2019
+START_YEAR = 2000
+END_YEAR   = 2009
 
 # ============================================================
 # INPUT FILE
