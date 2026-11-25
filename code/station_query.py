@@ -17,7 +17,7 @@ from urllib3.util.retry import Retry
 
 BASE_URL = "https://datahub.chesapeakebay.net/api"
 
-OUTPUT_DIR = Path("datahub_water_quality")
+OUTPUT_DIR = ("/glade/derecho/scratch/zacharys/HAB_Prediction/data/stations/")
 METADATA_DIR = OUTPUT_DIR / "metadata"
 RAW_DIR = OUTPUT_DIR / "raw_json"
 
@@ -25,7 +25,7 @@ RAW_DIR = OUTPUT_DIR / "raw_json"
 # Leave False for the first run.
 # The script will find a real observation and verify a minimal query.
 # After the test succeeds, change this to True and run again.
-RUN_FULL_DOWNLOAD = False
+RUN_FULL_DOWNLOAD = True
 
 # Leave blank to include every available substance.
 # Example: "Dissolved Oxygen"
