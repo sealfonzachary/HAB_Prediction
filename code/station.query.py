@@ -1,3 +1,5 @@
+import pandas as pd
+
 cbp = df[
     df["stationName"].str.contains(
         r"^CB",
