@@ -15,8 +15,8 @@ from pathlib import Path
 import requests
 
 # ===================== EDIT THESE =====================
-START_YEAR = 2014        # END_YEAR - START_YEAR must be <= 9
-END_YEAR   = 2023
+START_YEAR = 2000        # END_YEAR - START_YEAR must be <= 9
+END_YEAR   = 2009
 TEST_N     = 0           # set to e.g. 5 to try only the first 5 stations; 0 = all
 # ======================================================
 
@@ -63,63 +63,72 @@ def clean(name):
     return re.sub(r"[^A-Za-z0-9._-]+", "_", str(name).strip())
 
 
-# 1. Get every station, substance (parameter), program and project ID
-station_rows = get_json("GeographicAttribute/Station")
-stations = sorted({s["stationId"] for s in station_rows})
-if TEST_N:
-    stations = stations[:TEST_N]
-substances = sorted({r["substanceId"] for r in get_json("MetaDataAttribute/Substance")})
-programs = sorted({r["programId"] for r in get_json("MetaDataAttribute/WaterQualityPrograms")})
-projects = sorted({r["projectId"] for r in get_json("MetaDataAttribute/WaterQualityProjects")})
-print(f"{len(stations)} stations, {len(substances)} substances")
-
-# 2. Classify stations: tidal = has a Chesapeake Bay segment (CBSeg2003); else non-tidal
-#    Results are cached in station_info.csv, so later runs only look up new stations.
-info_path = OUT_DIR.parent / "station_info.csv"
+# 1. Get the list of WATER QUALITY stations (not all 78,000 stations in DataHub)
+#    Ask the API for the water-quality stations inside every HUC8 watershed and every
+#    Bay segment. Each result already includes lat/lon and the Bay segment (CBSeg2003),
+#    so we can classify tidal vs non-tidal without any extra lookups.
+info_path = OUT_DIR.parent / "wq_station_info.csv"
+FIELDS = ["station", "kind", "latitude", "longitude", "cbSeg2003", "fallLine", "state", "description"]
 info = {}                                  # station name -> row
 if info_path.exists():
     with open(info_path, newline="") as f:
         info = {r["station"]: r for r in csv.DictReader(f)}
+    print(f"Loaded {len(info)} water-quality stations from {info_path} (delete it to refresh)")
+else:
+    def fetch_stations(geo_type, ids):
+        """Fetch station details for a list of geography ids; falls back to one at a time."""
+        for batch in chunks(ids, 20):
+            text = None
+            try:
+                text = get(f"{BASE}/WaterQuality/Station/{geo_type}/{csv_ids(batch)}?format=json",
+                           allow_404=True, tries=3)
+                parts = [text]
+            except RuntimeError:
+                parts = []
+                for i in batch:
+                    try:
+                        parts.append(get(f"{BASE}/WaterQuality/Station/{geo_type}/{i}?format=json",
+                                         allow_404=True, tries=2))
+                    except RuntimeError:
+                        print(f"  could not fetch {geo_type} {i}")
+            for text in parts:
+                for d in json.loads(text) if text else []:
+                    name = clean(d["station"])
+                    tidal = (d.get("cbSeg2003") or "").strip() != ""
+                    info[name] = {"station": name, "kind": "tidal" if tidal else "non_tidal",
+                                  "latitude": d.get("latitude"), "longitude": d.get("longitude"),
+                                  "cbSeg2003": d.get("cbSeg2003"), "fallLine": d.get("fallLine"),
+                                  "state": d.get("state"), "description": d.get("stationDescription")}
+            time.sleep(1)
+        print(f"  after {geo_type}: {len(info)} stations")
+
+    print("Finding water-quality stations (this takes a few minutes, only the first time)...")
+    fetch_stations("CBSeg2003", sorted(r["cbSegment2003Id"] for r in get_json("GeographicAttribute/CBSeg2003")))
+    fetch_stations("HUC8", sorted(r["huc8Id"] for r in get_json("GeographicAttribute/HUC8")))
+    if info:
+        with open(info_path, "w", newline="") as f:
+            w = csv.DictWriter(f, fieldnames=FIELDS)
+            w.writeheader()
+            w.writerows(info.values())
+
 kind = {name: r["kind"] for name, r in info.items()}
 
+# The data query needs station IDs, so match station names to IDs
+name_to_id = {clean(r["stationName"]): r["stationId"] for r in get_json("GeographicAttribute/Station")}
+wq_names = sorted(info)
+if TEST_N:
+    wq_names = wq_names[:TEST_N]
+stations = sorted(name_to_id[n] for n in wq_names if n in name_to_id)
+missing = [n for n in wq_names if n not in name_to_id]
+if missing:
+    print(f"  {len(missing)} stations have no ID match and will be skipped: {missing[:5]}")
 
-def lookup(ids):
-    """Fetch station details; returns True if the request worked."""
-    try:
-        text = get(f"{BASE}/WaterQuality/Station/Station/{csv_ids(ids)}?format=json", allow_404=True, tries=2)
-    except RuntimeError:
-        return False
-    for d in json.loads(text) if text else []:
-        name = clean(d["station"])
-        kind[name] = "tidal" if (d.get("cbSeg2003") or "").strip() else "non_tidal"
-        info[name] = {"station": name, "kind": kind[name], "latitude": d.get("latitude"),
-                      "longitude": d.get("longitude"), "cbSeg2003": d.get("cbSeg2003"),
-                      "fallLine": d.get("fallLine"), "state": d.get("state"),
-                      "description": d.get("stationDescription")}
-    return True
-
-
-names = {s["stationId"]: clean(s["stationName"]) for s in station_rows}
-todo = [i for i in stations if names.get(i) not in kind]
-print(f"{len(kind)} stations already classified, looking up {len(todo)} more")
-failed = []
-for batch in chunks(todo, 20):
-    if not lookup(batch):                  # batch refused: retry one station at a time
-        for i in batch:
-            time.sleep(1)
-            if not lookup([i]):
-                failed.append(names.get(i, i))
-    time.sleep(1)
-if failed:
-    print(f"  could not classify {len(failed)} stations (they go in unknown/): {failed[:10]}")
-if info:
-    with open(info_path, "w", newline="") as f:
-        w = csv.DictWriter(f, fieldnames=["station", "kind", "latitude", "longitude",
-                                          "cbSeg2003", "fallLine", "state", "description"])
-        w.writeheader()
-        w.writerows(info.values())
-n_t = sum(v == "tidal" for v in kind.values())
-print(f"Classified {n_t} tidal, {len(kind) - n_t} non-tidal  (saved {info_path})")
+substances = sorted({r["substanceId"] for r in get_json("MetaDataAttribute/Substance")})
+programs = sorted({r["programId"] for r in get_json("MetaDataAttribute/WaterQualityPrograms")})
+projects = sorted({r["projectId"] for r in get_json("MetaDataAttribute/WaterQualityProjects")})
+n_t = sum(kind[n] == "tidal" for n in wq_names)
+print(f"{len(stations)} water-quality stations ({n_t} tidal, {len(wq_names) - n_t} non-tidal), "
+      f"{len(substances)} substances")
 
 # 3. Move station folders from earlier runs into tidal/ or non_tidal/
 for old in [p for p in OUT_DIR.iterdir() if p.is_dir() and p.name not in ("tidal", "non_tidal", "unknown")]:
