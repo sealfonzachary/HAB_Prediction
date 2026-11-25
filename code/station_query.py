@@ -17,7 +17,7 @@ from urllib3.util.retry import Retry
 
 BASE_URL = "https://datahub.chesapeakebay.net/api"
 
-OUTPUT_DIR = ("/glade/derecho/scratch/zacharys/HAB_Prediction/data/stations/")
+OUTPUT_DIR = Path("/glade/derecho/scratch/zacharys/HAB_Prediction/data/stations/")
 METADATA_DIR = OUTPUT_DIR / "metadata"
 RAW_DIR = OUTPUT_DIR / "raw_json"
 
