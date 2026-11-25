@@ -1,71 +1,110 @@
-from pathlib import Path
+import requests
 import pandas as pd
+from pathlib import Path
 
-BASE = Path(
+# ============================================================
+# CHANGE ONLY THESE VALUES
+# ============================================================
+
+START_YEAR = 2010
+END_YEAR   = 2019
+
+# ============================================================
+# INPUT FILE
+# ============================================================
+
+stations = pd.read_csv(
+    "/glade/derecho/scratch/zacharys/HAB_Prediction/data/stations/tidal_stations.csv"
+)
+
+OUTPUT_ROOT = Path(
     "/glade/derecho/scratch/zacharys/HAB_Prediction/data/stations/tidal"
 )
 
-TARGET_YEARS = set(range(2000, 2026))
+OUTPUT_ROOT.mkdir(
+    parents=True,
+    exist_ok=True
+)
 
-records = []
+# ============================================================
+# DOWNLOAD
+# ============================================================
 
-for station_dir in BASE.iterdir():
+for _, row in stations.iterrows():
 
-    if not station_dir.is_dir():
-        continue
+    station = row["station"]
 
-    station = station_dir.name
+    station_dir = OUTPUT_ROOT / station
 
-    years = []
-
-    for f in station_dir.glob("*.csv"):
-
-        try:
-            year = int(f.stem.split("_")[-1])
-            years.append(year)
-
-        except Exception:
-            pass
-
-    years = sorted(set(years))
-
-    missing = sorted(TARGET_YEARS - set(years))
-
-    records.append(
-        {
-            "station": station,
-            "start": min(years) if years else None,
-            "end": max(years) if years else None,
-            "nyears": len(years),
-            "missing_years": ",".join(map(str, missing))
-        }
+    station_dir.mkdir(
+        exist_ok=True
     )
 
-coverage = pd.DataFrame(records)
+    for year in range(
+        START_YEAR,
+        END_YEAR + 1
+    ):
 
-coverage = coverage.sort_values(
-    ["nyears", "station"],
-    ascending=[False, True]
-)
+        outfile = (
+            station_dir /
+            f"{station}_{year}.csv"
+        )
 
-coverage.to_csv(
-    "station_coverage_report.csv",
-    index=False
-)
+        if outfile.exists():
 
-incomplete = coverage[
-    coverage["nyears"] < 26
-]
+            print(
+                f"SKIP {outfile.name}"
+            )
 
-incomplete.to_csv(
-    "stations_missing_years.csv",
-    index=False
-)
+            continue
 
-print()
-print("Total stations:", len(coverage))
-print("Complete stations:", (coverage["nyears"] == 26).sum())
-print("Incomplete stations:", len(incomplete))
-print()
+        url = (
+            "https://datahub.chesapeakebay.net/api/"
+            f"WaterQuality/"
+            f"01-01-{year}/12-31-{year}/"
+            f"0,1/2/12/"
+            f"Station/{station}/71"
+            "?format=json"
+        )
 
-print(coverage.head(20))
+        try:
+
+            r = requests.get(
+                url,
+                timeout=120
+            )
+
+            if r.status_code != 200:
+
+                print(
+                    f"FAIL {station} {year}"
+                )
+
+                continue
+
+            data = r.json()
+
+            if len(data) == 0:
+
+                print(
+                    f"EMPTY {station} {year}"
+                )
+
+                continue
+
+            pd.DataFrame(
+                data
+            ).to_csv(
+                outfile,
+                index=False
+            )
+
+            print(
+                f"SAVED {station} {year}"
+            )
+
+        except Exception as e:
+
+            print(
+                f"ERROR {station} {year}: {e}"
+            )
