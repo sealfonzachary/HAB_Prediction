@@ -145,6 +145,8 @@ jobs = list(itertools.product(chunks(stations), chunks(substances),
                               chunks(programs, 60), chunks(projects, 60)))
 done_file = OUT_DIR.parent / f"done_{START_YEAR}_{END_YEAR}.txt"
 done = set(done_file.read_text().split()) if done_file.exists() else set()
+print(f"{len(jobs)} requests needed for {START_YEAR}-{END_YEAR}; {len(done)} already done")
+failed_jobs = []
 
 for n, (st, sub, prog, proj) in enumerate(jobs, 1):
     key = f"{st[0]}-{sub[0]}-{prog[0]}-{proj[0]}"
@@ -153,7 +155,12 @@ for n, (st, sub, prog, proj) in enumerate(jobs, 1):
     print(f"[{n}/{len(jobs)}] downloading...")
     url = (f"{BASE}/WaterQuality/{start}/{end}/0,1/{csv_ids(prog)}/{csv_ids(proj)}"
            f"/Station/{csv_ids(st)}/{csv_ids(sub)}?format=csv")
-    text = get(url, allow_404=True)          # 404 = no data in this batch
+    try:
+        text = get(url, allow_404=True)      # 404 = no data in this batch
+    except RuntimeError:                     # server refused: skip, retry on next run
+        print("  FAILED (will be retried next run)")
+        failed_jobs.append(n)
+        continue
 
     # 5. Split the response into one file per station per year
     if text and text.strip():
@@ -184,4 +191,8 @@ for n, (st, sub, prog, proj) in enumerate(jobs, 1):
     done_file.write_text("\n".join(sorted(done)))
     time.sleep(0.5)
 
-print("DONE")
+print(f"\nDONE. {len(jobs) - len(done)} requests still not done"
+      + (f" ({len(failed_jobs)} failed this run: re-run the script to retry them)" if failed_jobs else ""))
+for k in ("tidal", "non_tidal", "unknown"):
+    d = OUT_DIR / k
+    print(f"  {k}: {sum(p.is_dir() for p in d.iterdir()) if d.exists() else 0} station folders")
